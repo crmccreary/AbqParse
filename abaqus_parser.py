@@ -13,6 +13,39 @@ import ply.yacc
 from abaqus_lexer import AbaqusLexer
 from plyparser import PLYParser, Coord, ParseError
 
+def list_append(lst, item):
+    lst.append(item)
+    return lst
+
+class Parameter(object):
+    def __init__(self, name, value = None):
+        self.name = name
+        self.value = value
+        
+class Keyword(object):
+    def __init__(self, keyword, params = None, data = None):
+        self.keyword = keyword
+        self.params = params
+        self.data = data
+        
+    def __str__(self):
+        kwd_str_list = ['Keyword:{0}'.format(self.keyword),]
+        kwd_str_list.append('\n')
+        if self.params is not None:
+            for param in self.params:
+                kwd_str_list.append('Parameter:{0}={1}'.format(param.name, param.value))
+                kwd_str_list.append('\n')
+        kwd_str_list.append('Data:\n')
+        if self.data is not None:
+            for data in self.data:
+                kwd_str_list.append('{0},'.format(data))
+                kwd_str_list.append('\n')
+        return ''.join([item for item in kwd_str_list])
+    
+    def __repr__(self):
+        return str(self)
+        
+keywords = []
 
 class AbaqusParser(PLYParser):    
     def __init__(
@@ -105,37 +138,49 @@ class AbaqusParser(PLYParser):
     ##
     ## Grammar productions
     ##
+    
 
     def p_keyword_list(self, p):
         '''
         keyword_list : keyword_list keyword
         '''
-        p[0] = p[1]
+        p[0] = p[1] + [p[2]]
 
     def p_keyword(self, p):
         '''
         keyword_list : keyword
         '''
-        p[0] = p[1]
+        p[0] = [p[1]]
 
     def p_single_keyword(self, p):
         '''
         keyword : KEYWORD
+                | KEYWORD data_lines
                 | KEYWORD COMMA param_list
-                | KEYWORD data_list
-                | KEYWORD COMMA param_list data_list
+                | KEYWORD COMMA param_list data_lines
         '''
-        print('p_keyword - len(p):{0}'.format(len(p)))
-        p[0] = p[1]
+        if len(p) == 2:
+            # KEYWORD
+            p[0] = Keyword(p[1])
+        elif len(p) == 3:
+            # KEYWORD data_list
+            p[0] = Keyword(p[1], data = p[2])
+        elif len(p) == 4:
+            # KEYWORD COMMA param_list
+            p[0] = Keyword(p[1], params = p[3])
+        elif len(p) == 5:
+            # KEYWORD COMMA param_list data_list
+            p[0] = Keyword(p[1], params = p[3], data = p[4])
+        else:
+            # Error?
+            pass
 
     def p_param_list(self, p):
         '''param_list : param_list COMMA param'''
-        print('p_param_list - len(p):{0}'.format(len(p)))
-        p[0] = p[1] + [p[2]]
+        p[0] = p[1] + [p[3]]
 
     def p_param(self, p):
         '''param_list : param'''
-        print('p_param - len(p):{0}'.format(len(p)))
         p[0] = [p[1]]
 
     def p_single_param(self, p):
@@ -145,24 +190,44 @@ class AbaqusParser(PLYParser):
               | PARAM EQUALS FLOAT_CONST
               | PARAM EQUALS INT_CONST_DEC
         '''
-        print('p_single_param - len(p):{0}'.format(len(p)))
         if len(p) == 2:
-            p[0] = p[1]
-        else:
-            print('len(p):{0}'.format(len(p)))
+            p[0] = Parameter(p[1])
+        elif len(p) == 4:
+            p[0] = Parameter(p[1], value = p[3])
+            
+
+    def p_data_lines_list(self, p):
+        '''
+        data_lines : data_lines data_line
+        '''
+        p[0] = list_append(p[1],p[2])
+
+    def p_data_lines(self, p):
+        '''
+        data_lines : data_line
+        '''
+        p[0] = [p[1]]
+
+    def p_data_line(self, p):
+        '''
+        data_line : data_list LASTTOKENONLINE
+        '''
+        p[0] = p[1]
 
     def p_data_list(self, p):
         '''
         data_list : data_list COMMA data
                   | data_list data
         '''
-        print('p_data_list - len(p):{0}'.format(len(p)))
-        p[0] = p[1] + [p[2]]
+        if len(p) == 3:
+            p[0] = p[1] + [p[2]]
+        elif len(p) == 4:
+            p[0] = p[1] + [p[3]]
 
     def p_data(self, p):
-        '''data_list : data'''
-        print('p_data - len(p):{0}'.format(len(p)))
-        print('p:{0}:{0}'.format(p))
+        '''
+        data_list : data
+        '''
         p[0] = [p[1]]
 
     def p_single_data(self, p):
@@ -171,8 +236,6 @@ class AbaqusParser(PLYParser):
              | INT_CONST_DEC
              | FLOAT_CONST
         '''
-        print('p_single_data - len(p):{0}'.format(len(p)))
-        print('p:{0}:{0}'.format(p))
         p[0] = p[1]
 
     def p_error(self, p):
@@ -197,6 +260,7 @@ if __name__ == "__main__":
     word1 word2
     line2
     ** comment
+    *keyword,singleparam
     *KEYword,
     param=continue
     *KEYword,param=coffee,param=1.0,param=3,param=4.0e-3
@@ -212,6 +276,6 @@ if __name__ == "__main__":
     '''
     
     # set debuglevel to 2 for debugging
-    t = parser.parse(buf, 'x.c', debuglevel=2)
+    t = parser.parse(buf, 'x.c', debuglevel=3)
     for kw in t:
         print kw

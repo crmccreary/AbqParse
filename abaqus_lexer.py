@@ -103,9 +103,8 @@ class AbaqusLexer(object):
 
         # Delimeters 
         'COMMA', 'PERIOD',          # . ,
-
-        # Comment
-        'COMMENT',      # '**'
+        
+        'LASTTOKENONLINE',
     )
 
     ##
@@ -158,11 +157,12 @@ class AbaqusLexer(object):
     states = (
               # 
               ('keywordstate', 'inclusive'),
+              ('datalinestate', 'inclusive'),
              )
 
     @TOKEN(abaqus_keyword)
     def t_KEYWORD(self, t):
-        t.lexer.begin('keywordstate')
+        t.lexer.push_state('keywordstate')
         t.value = t.value[1:]
         return t
 
@@ -178,7 +178,9 @@ class AbaqusLexer(object):
 
     def t_keywordstate_NEWLINE(self, t):
         r'\n'
-        t.lexer.begin('INITIAL')
+        t.lexer.pop_state()
+        t.lexer.push_state('datalinestate')
+        t.lexer.lineno += t.value.count("\n")
 
     t_keywordstate_ignore = ' \t'
 
@@ -186,7 +188,11 @@ class AbaqusLexer(object):
         msg = 'invalid keyword'
         self._error(msg, t)
 
-    
+    def t_datalinestate_LASTTOKENONLINE(self, t):
+        r'\n+'
+        t.lexer.lineno += t.value.count("\n")
+        return t
+
     ##
     ## Rules for the normal state
     ##
@@ -194,11 +200,12 @@ class AbaqusLexer(object):
 
     
     def t_COMMENT(self, t):
-        r'[ \t]*\*\*.*'
+        r'[ \t]*\*\*.*\n'
         pass
 
     # Newlines
-    def t_NEWLINE(self, t):
+
+    def t_NEWLINEALONE(self, t):
         r'\n+'
         t.lexer.lineno += t.value.count("\n")
 
@@ -284,15 +291,16 @@ if __name__ == "__main__":
     #text = open(filename).read()
     
     #~ text = '"'+r"""ka \p ka"""+'"'
-    text = r"""
+    text = ''' 
     *heading
-    blah blah
+    word1 word2
     line2
     ** comment
+    *keyword,singleparam
     *KEYword,
     param=continue
     *KEYword,param=coffee,param=1.0,param=3,param=4.0e-3
-    *node,param=coffee
+    *node,nset=all_nodes
     1,1.0,1.0e-5,1.0E+6
     2,1.0,1.0e-5,1.0E+6
     3,1.0,1.0e-5,1.0E+6
@@ -300,8 +308,8 @@ if __name__ == "__main__":
     *element,type=c3d4,elset=foo
     1,1,2,3,4
     2,3,4,5,6
-    """
-    
+    *end
+    '''    
     def errfoo(msg, a, b):
         print(msg + "\n")
         sys.exit()

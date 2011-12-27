@@ -148,7 +148,7 @@ class AbaqusLexer(object):
 
     # floating constants (K&R2: A.2.5.3)
     exponent_part = r"""([eE][-+]?[0-9]+)"""
-    fractional_constant = r"""([0-9]*\.[0-9]+)|([0-9]+\.)"""
+    fractional_constant = r"""([\+\-]*[0-9]*\.[0-9]+)|([\+\-]*[0-9]+\.)"""
     floating_constant = '(((('+fractional_constant+')'+exponent_part+'?)|([0-9]+'+exponent_part+'))[FfLl]?)'
 
     ##
@@ -201,7 +201,7 @@ class AbaqusLexer(object):
     
     def t_COMMENT(self, t):
         r'[ \t]*\*\*.*\n'
-        pass
+        t.lexer.lineno += t.value.count("\n")
 
     # Newlines
 
@@ -227,18 +227,18 @@ class AbaqusLexer(object):
     def t_FLOAT_CONST(self, t):
         return t
 
-    @TOKEN(hex_constant)
-    def t_INT_CONST_HEX(self, t):
-        return t
+    #@TOKEN(hex_constant)
+    #def t_INT_CONST_HEX(self, t):
+    #    return t
 
-    @TOKEN(bad_octal_constant)
-    def t_BAD_CONST_OCT(self, t):
-        msg = "Invalid octal constant"
-        self._error(msg, t)
+    #@TOKEN(bad_octal_constant)
+    #def t_BAD_CONST_OCT(self, t):
+    #    msg = "Invalid octal constant"
+    #    self._error(msg, t)
 
-    @TOKEN(octal_constant)
-    def t_INT_CONST_OCT(self, t):
-        return t
+    #@TOKEN(octal_constant)
+    #def t_INT_CONST_OCT(self, t):
+    #    return t
 
     @TOKEN(decimal_constant)
     def t_INT_CONST_DEC(self, t):

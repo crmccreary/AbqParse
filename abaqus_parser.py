@@ -276,6 +276,6 @@ if __name__ == "__main__":
     '''
     
     # set debuglevel to 2 for debugging
-    t = parser.parse(buf, 'x.c', debuglevel=3)
+    t = parser.parse(buf, 'x.c', debuglevel=0)
     for kw in t:
         print kw

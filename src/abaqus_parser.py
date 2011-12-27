@@ -217,6 +217,7 @@ class AbaqusParser(PLYParser):
     def p_data_list(self, p):
         '''
         data_list : data_list COMMA data
+                  | data_list COMMA LASTTOKENONLINE
                   | data_list data
         '''
         if len(p) == 3:
@@ -244,7 +245,8 @@ class AbaqusParser(PLYParser):
                 'before: %s' % p.value, 
                 self._coord(p.lineno))
         else:
-            self._parse_error('At end of input', '')
+            pass
+            #self._parse_error('At end of input', '')
 
 
 if __name__ == "__main__":

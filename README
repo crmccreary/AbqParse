@@ -1,1 +1,4 @@
 A parser for Abaqus input files using ply
+=========================================
+
+A simple parser for Abaqus input files that parses out the keywords, parameters, and data lines.

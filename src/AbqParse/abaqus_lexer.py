@@ -113,8 +113,8 @@ class AbaqusLexer(object):
     ##
 
     # valid C identifiers (K&R2: A.2.3)
-    identifier = r'[a-zA-Z_][0-9a-zA-Z_]*'
-    abaqus_keyword = r'\*[a-zA-Z][0-9a-zA-Z_]*'
+    identifier = r'[a-zA-Z_][0-9a-zA-Z_. ]*'
+    abaqus_keyword = r'\*[a-zA-Z][0-9a-zA-Z_ \t]*'
 
     # integer constants (K&R2: A.2.5.1)
     integer_suffix_opt = r'(u?ll|U?LL|([uU][lL])|([lL][uU])|[uU]|[lL])?'

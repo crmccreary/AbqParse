@@ -1,10 +1,7 @@
 #-----------------------------------------------------------------
-# pycparser: c_parser.py
 #
-# AbaqusParser class: Parser and AST builder for the C language
+# AbaqusParser class: Parser and AST builder for Abaqus input files
 #
-# Copyright (C) 2008-2011, Eli Bendersky
-# License: BSD
 #-----------------------------------------------------------------
 import re
 
@@ -96,8 +93,7 @@ class AbaqusParser(PLYParser):
                 Generate a parser.out file that explains how yacc
                 built the parsing table from the grammar.
         """
-        self.clex = AbaqusLexer(
-            error_func=self._lex_error_func)
+        self.clex = AbaqusLexer(error_func=self._lex_error_func)
             
         self.clex.build(
             optimize=lex_optimize,
@@ -113,10 +109,10 @@ class AbaqusParser(PLYParser):
         
     
     def parse(self, text, filename='', debuglevel=0):
-        """ Parses C code and returns an AST.
+        """ Parses Abaqus input files and returns an AST.
         
             text:
-                A string containing the C source code
+                A string containing the Abaqus input file
             
             filename:
                 Name of the file being parsed (for meaningful
@@ -139,7 +135,6 @@ class AbaqusParser(PLYParser):
     ## Grammar productions
     ##
     
-
     def p_keyword_list(self, p):
         '''
         keyword_list : keyword_list keyword
@@ -211,13 +206,13 @@ class AbaqusParser(PLYParser):
     def p_data_line(self, p):
         '''
         data_line : data_list LASTTOKENONLINE
+                  | data_list COMMA LASTTOKENONLINE
         '''
         p[0] = p[1]
 
     def p_data_list(self, p):
         '''
         data_list : data_list COMMA data
-                  | data_list COMMA LASTTOKENONLINE
                   | data_list data
         '''
         if len(p) == 3:
@@ -245,8 +240,7 @@ class AbaqusParser(PLYParser):
                 'before: %s' % p.value, 
                 self._coord(p.lineno))
         else:
-            pass
-            #self._parse_error('At end of input', '')
+            self._parse_error('At end of input', '')
 
 
 if __name__ == "__main__":
@@ -254,7 +248,7 @@ if __name__ == "__main__":
     import time, sys
     
     t1 = time.time()
-    parser = AbaqusParser(lex_optimize=True, yacc_debug=True, yacc_optimize=False)
+    parser = AbaqusParser(lex_optimize=False, yacc_debug=True, yacc_optimize=False)
     print(time.time() - t1)
     
     buf = ''' 
@@ -274,10 +268,14 @@ if __name__ == "__main__":
     *element,type=c3d4,elset=foo
     1,1,2,3,4
     2,3,4,5,6
-    *end
+    *elset,elset=foo
+    1,
+    2,
+    3,
     '''
     
-    # set debuglevel to 2 for debugging
+    # set debuglevel to 2 for debugging (or not)
     t = parser.parse(buf, 'x.c', debuglevel=0)
     for kw in t:
         print kw
+        
